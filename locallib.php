@@ -19,10 +19,14 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         return get_string('pluginname', self::COMPONENT);
     }
 
+    /**
+     * Define the element in the teacher's assignment settings.
+     */
     public function get_settings(MoodleQuickForm $mform) {
         $editoroptions = [
             'subdirs' => 1, 'maxfiles' => EDITOR_UNLIMITED_FILES, 'context' => $this->assignment->get_context()
         ];
+
         $mform->addElement('editor', 'assignsubmission_responsetemplate_template',
             get_string('responsetemplate', self::COMPONENT), ['rows' => 10], $editoroptions);
         $mform->setType('assignsubmission_responsetemplate_template', PARAM_RAW);
@@ -31,11 +35,22 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         $mform->hideIf('assignsubmission_responsetemplate_template', 'assignsubmission_onlinetext_enabled', 'notchecked');
     }
 
+    /**
+     * Populate the teacher settings form.
+     */
     public function data_preprocessing(&$defaultvalues) {
         global $DB;
-        $instance = $this->assignment->get_instance();
-        if (!$instance) return;
 
+        // SAFE GUARD: Check if the assignment record exists before calling get_instance().
+        // If we are adding a new assignment, $cm->instance will be 0 or empty.
+        $cm = $this->assignment->get_course_module();
+        if (!$cm || empty($cm->instance)) {
+            return; // Exit early: we are in "Add Mode".
+        }
+
+        // It is now safe to fetch the instance.
+        $instance = $this->assignment->get_instance();
+        
         $record = $DB->get_record(self::TABLE, ['assignment' => $instance->id]);
         $draftdata = (object)[
             'template' => $record ? $record->template : '',
@@ -46,26 +61,44 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
             ['context' => $this->assignment->get_context()], 
             $this->assignment->get_context(), self::COMPONENT, self::FILEAREA, 0);
 
+        // Map resulting editor object back to the form field.
         $fieldname = 'assignsubmission_responsetemplate_template';
-        if (is_array($defaultvalues)) { $defaultvalues[$fieldname] = $draftdata->template_editor; }
-        else { $defaultvalues->$fieldname = $draftdata->template_editor; }
+        if (is_array($defaultvalues)) {
+            $defaultvalues[$fieldname] = $draftdata->template_editor;
+        } else {
+            $defaultvalues->$fieldname = $draftdata->template_editor;
+        }
     }
 
+    /**
+     * Save the settings.
+     */
     public function save_settings(stdClass $data) {
         global $DB;
+
+        // During save, Moodle has already created the assign record.
         $instance = $this->assignment->get_instance();
-        if (!$instance) return true;
+        if (!$instance) {
+            return true;
+        }
 
-        $fieldname = 'assignsubmission_responsetemplate_template';
-        if (!isset($data->$fieldname)) return true;
+        // mod_assign strips prefixes. Check both full and stripped names for safety.
+        $fullname = 'assignsubmission_responsetemplate_template';
+        $shortname = 'template';
+        $editordata = isset($data->$fullname) ? $data->$fullname : (isset($data->$shortname) ? $data->$shortname : null);
 
-        file_save_draft_area_files($data->{$fieldname}['itemid'], $this->assignment->get_context()->id, self::COMPONENT, self::FILEAREA, 0);
+        if (!$editordata || !is_array($editordata)) {
+            return true;
+        }
+
+        // Persist files from the draft area.
+        file_save_draft_area_files($editordata['itemid'], $this->assignment->get_context()->id, self::COMPONENT, self::FILEAREA, 0);
 
         $record = $DB->get_record(self::TABLE, ['assignment' => $instance->id]);
         $newrecord = (object)[
             'assignment' => $instance->id,
-            'template' => $data->{$fieldname}['text'],
-            'templateformat' => $data->{$fieldname}['format']
+            'template' => $editordata['text'],
+            'templateformat' => $editordata['format']
         ];
 
         if ($record) {
@@ -77,7 +110,15 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         return true;
     }
 
-    // This plugin is now just a settings provider.
     public function allow_submissions() { return false; }
     public function is_empty(stdClass $submission) { return true; }
+    
+    public function delete_instance() {
+        global $DB;
+        $cm = $this->assignment->get_course_module();
+        if ($cm && !empty($cm->instance)) {
+            $DB->delete_records(self::TABLE, ['assignment' => $cm->instance]);
+        }
+        return true;
+    }
 }
