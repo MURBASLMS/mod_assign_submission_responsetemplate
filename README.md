@@ -3,7 +3,7 @@ in this plugin. On submission it should load up in the student's submission in t
 Why? grading is generally better in assignment, several use cases popped up for "exam" type scenarios where quiz grading and feedback did not fit the bill.
 
 in mod/assign/submission/onlinetext/locallib.php
-core hack around L168
+core hack around L168 (MOODLE_404_STABLE)
 Could not get it to work outside this in a separate plugin, not that sure why but it seemed very hard to get the assignment and submission id passed through.
 
  ```
