@@ -5,6 +5,8 @@ Why? grading is generally better in assignment, several use cases popped up for 
 in mod/assign/submission/onlinetext/locallib.php
 core hack around L168
 Could not get it to work outside this in a separate plugin, not that sure why but it seemed very hard to get the assignment and submission id passed through.
+
+ ```
  if ($submission) {
             $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
             if ($onlinetextsubmission) {
@@ -48,4 +50,4 @@ Could not get it to work outside this in a separate plugin, not that sure why bu
         $mform->addElement('editor', 'onlinetext_editor', $this->get_name(), null, $editoroptions);
 
         return true;
-    }
+    }```
