@@ -1,0 +1,32 @@
+<?php
+/**
+ * Upgrade logic for assignsubmission_responsetemplate
+ *
+ * @package   assignsubmission_responsetemplate
+ * @copyright 2026 Your Name
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
+
+defined('MOODLE_INTERNAL') || die();
+
+/**
+ * Upgrade function
+ * @param int $oldversion
+ * @return bool
+ */
+function xmldb_assignsubmission_responsetemplate_upgrade($oldversion) {
+    global $DB;
+    $dbman = $DB->get_manager();
+
+    if ($oldversion < 2026040602) { // Match the new version.
+        $table = new xmldb_table('assign_submission_resptemp');
+        $field = new xmldb_field('fullscreen', XMLDB_TYPE_INTEGER, '2', null, XMLDB_NOTNULL, null, '0', 'templateformat');
+
+        if (!$dbman->field_exists($table, $field)) {
+            $dbman->add_field($table, $field);
+        }
+
+        upgrade_plugin_savepoint(true, 2026040602, 'assignsubmission', 'responsetemplate');
+    }
+    return true;
+}

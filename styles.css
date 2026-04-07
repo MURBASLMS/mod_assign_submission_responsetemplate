@@ -1,0 +1,61 @@
+/* 1. HIDE SIDEBAR BY DEFAULT */
+.rt-sidebar {
+    display: none !important; /* This ensures it never shows in the small editor */
+}
+
+/* 2. SHOW SIDEBAR ONLY IN FULLSCREEN */
+.tox-fullscreen .rt-sidebar {
+    display: flex !important;
+    width: 380px !important;
+    flex: 0 0 380px !important;
+    background-color: #fcfcfc !important;
+    border-left: 1px solid #d1d1d1 !important;
+    flex-direction: column !important;
+    z-index: 2 !important;
+    overflow-y: auto !important;
+    padding: 0 !important;
+    height: 100% !important;
+    box-shadow: -2px 0 5px rgba(0,0,0,0.05) !important;
+}
+
+/* Ensure the editor container allows the sidebar to sit next to it */
+.tox-fullscreen .tox-sidebar-wrap {
+    display: flex !important;
+    flex-direction: row !important;
+}
+
+.tox-fullscreen .tox-edit-area {
+    flex: 1 1 auto !important;
+}
+
+/* Sidebar styling continues... */
+.rt-sidebar-title {
+    padding: 15px 20px !important;
+    background: #ffffff !important;
+    border-bottom: 1px solid #eee !important;
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    color: #111 !important;
+}
+
+.rt-sidebar-content {
+    padding: 20px !important;
+    overflow-y: auto !important;
+}
+
+.rt-sidebar .panel-section {
+    background: #fff !important;
+    border: 1px solid #e5e5e5 !important;
+    border-radius: 8px !important;
+    padding: 15px !important;
+    margin-bottom: 20px !important;
+}
+
+.rt-sidebar .panel-header {
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    font-size: 0.7rem !important;
+    color: #007bff !important;
+    margin-bottom: 8px !important;
+    display: block !important;
+}

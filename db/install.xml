@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<XMLDB PATH="mod/assign/submission/responsetemplate/db" VERSION="20260322" COMMENT="XMLDB file for Moodle assignsubmission_responsetemplate">
+<XMLDB PATH="mod/assign/submission/responsetemplate/db" VERSION="20260323" COMMENT="XMLDB file for Moodle assignsubmission_responsetemplate">
     <TABLES>
         <TABLE NAME="assign_submission_resptemp" COMMENT="Stores the response template for an assignment">
             <FIELDS>
@@ -7,6 +7,7 @@
                 <FIELD NAME="assignment" TYPE="int" LENGTH="10" UNSIGNED="true" NOTNULL="true" DEFAULT="0" COMMENT="The assignment id"/>
                 <FIELD NAME="template" TYPE="text" NOTNULL="false" COMMENT="The template text"/>
                 <FIELD NAME="templateformat" TYPE="int" LENGTH="4" UNSIGNED="true" NOTNULL="true" DEFAULT="0" COMMENT="The format of the template text"/>
+                <FIELD NAME="fullscreen" TYPE="int" LENGTH="2" UNSIGNED="true" NOTNULL="true" DEFAULT="0" SEQUENCE="false" COMMENT="Whether to force fullscreen mode for the student"/>
             </FIELDS>
             <KEYS>
                 <KEY NAME="primary" TYPE="primary" FIELDS="id"/>
