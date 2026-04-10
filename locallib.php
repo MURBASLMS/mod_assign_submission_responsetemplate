@@ -1,7 +1,24 @@
 <?php
+// This file is part of Moodle - http://moodle.org/
+//
+// Moodle is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// Moodle is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+
 /**
+ * Library class for the response template submission plugin.
+ *
  * @package   assignsubmission_responsetemplate
- * @copyright 2026 Your Name
+ * @copyright 2026 MURBA S.L.
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
@@ -9,59 +26,102 @@ defined('MOODLE_INTERNAL') || die();
 
 require_once($CFG->dirroot . '/mod/assign/submissionplugin.php');
 
+/**
+ * Submission plugin that allows teachers to define a response template
+ * which is pre-filled into the online text editor for students.
+ *
+ * @package   assignsubmission_responsetemplate
+ * @copyright 2026 MURBA S.L.
+ * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
+ */
 class assign_submission_responsetemplate extends assign_submission_plugin {
 
+    /** @var string Database table name. */
     const TABLE = 'assign_submission_resptemp';
+
+    /** @var string Frankenstyle component name. */
     const COMPONENT = 'assignsubmission_responsetemplate';
+
+    /** @var string File area for template files. */
     const FILEAREA = 'template';
 
+    /**
+     * Get the name of the plugin.
+     *
+     * @return string
+     */
     public function get_name() {
         return get_string('pluginname', self::COMPONENT);
     }
 
     /**
-     * Define the element in the teacher's assignment settings.
+     * Add the template editor to the assignment settings form.
+     *
+     * @param MoodleQuickForm $mform The form to add elements to.
+     * @return void
      */
     public function get_settings(MoodleQuickForm $mform) {
         $editoroptions = [
-            'subdirs' => 1, 'maxfiles' => EDITOR_UNLIMITED_FILES, 'context' => $this->assignment->get_context()
+            'subdirs'  => 1,
+            'maxfiles' => EDITOR_UNLIMITED_FILES,
+            'context'  => $this->assignment->get_context(),
         ];
 
-        $mform->addElement('editor', 'assignsubmission_responsetemplate_template',
-            get_string('responsetemplate', self::COMPONENT), ['rows' => 10], $editoroptions);
+        $mform->addElement(
+            'editor',
+            'assignsubmission_responsetemplate_template',
+            get_string('responsetemplate', self::COMPONENT),
+            ['rows' => 10],
+            $editoroptions
+        );
         $mform->setType('assignsubmission_responsetemplate_template', PARAM_RAW);
-        
-        $mform->hideIf('assignsubmission_responsetemplate_template', 'assignsubmission_responsetemplate_enabled', 'notchecked');
-        $mform->hideIf('assignsubmission_responsetemplate_template', 'assignsubmission_onlinetext_enabled', 'notchecked');
+
+        $mform->hideIf(
+            'assignsubmission_responsetemplate_template',
+            'assignsubmission_responsetemplate_enabled',
+            'notchecked'
+        );
+        $mform->hideIf(
+            'assignsubmission_responsetemplate_template',
+            'assignsubmission_onlinetext_enabled',
+            'notchecked'
+        );
     }
 
     /**
-     * Populate the teacher settings form.
+     * Populate the assignment settings form with existing template data.
+     *
+     * @param array|stdClass $defaultvalues The default values for the form.
+     * @return void
      */
     public function data_preprocessing(&$defaultvalues) {
         global $DB;
 
-        // SAFE GUARD: Check if the assignment record exists before calling get_instance().
-        // If we are adding a new assignment, $cm->instance will be 0 or empty.
         $cm = $this->assignment->get_course_module();
         if (!$cm || empty($cm->instance)) {
-            return; // Exit early: we are in "Add Mode".
+            // New assignment — no saved template to load.
+            return;
         }
 
-        // It is now safe to fetch the instance.
         $instance = $this->assignment->get_instance();
-        
         $record = $DB->get_record(self::TABLE, ['assignment' => $instance->id]);
-        $draftdata = (object)[
-            'template' => $record ? $record->template : '',
-            'templateformat' => $record ? $record->templateformat : editors_get_preferred_format()
+
+        $draftdata = (object) [
+            'template'       => $record ? $record->template : '',
+            'templateformat' => $record ? $record->templateformat : editors_get_preferred_format(),
         ];
 
-        file_prepare_standard_editor($draftdata, 'template', 
-            ['context' => $this->assignment->get_context()], 
-            $this->assignment->get_context(), self::COMPONENT, self::FILEAREA, 0);
+        $context = $this->assignment->get_context();
+        file_prepare_standard_editor(
+            $draftdata,
+            'template',
+            ['context' => $context],
+            $context,
+            self::COMPONENT,
+            self::FILEAREA,
+            0
+        );
 
-        // Map resulting editor object back to the form field.
         $fieldname = 'assignsubmission_responsetemplate_template';
         if (is_array($defaultvalues)) {
             $defaultvalues[$fieldname] = $draftdata->template_editor;
@@ -71,34 +131,42 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
     }
 
     /**
-     * Save the settings.
+     * Save the template from the assignment settings form.
+     *
+     * @param stdClass $data The form data.
+     * @return bool
      */
     public function save_settings(stdClass $data) {
         global $DB;
 
-        // During save, Moodle has already created the assign record.
         $instance = $this->assignment->get_instance();
         if (!$instance) {
             return true;
         }
 
-        // mod_assign strips prefixes. Check both full and stripped names for safety.
-        $fullname = 'assignsubmission_responsetemplate_template';
+        // Moodle may strip the plugin prefix from field names.
+        $fullname  = 'assignsubmission_responsetemplate_template';
         $shortname = 'template';
-        $editordata = isset($data->$fullname) ? $data->$fullname : (isset($data->$shortname) ? $data->$shortname : null);
+        $editordata = $data->$fullname ?? $data->$shortname ?? null;
 
         if (!$editordata || !is_array($editordata)) {
             return true;
         }
 
-        // Persist files from the draft area.
-        file_save_draft_area_files($editordata['itemid'], $this->assignment->get_context()->id, self::COMPONENT, self::FILEAREA, 0);
+        $contextid = $this->assignment->get_context()->id;
+        file_save_draft_area_files(
+            $editordata['itemid'],
+            $contextid,
+            self::COMPONENT,
+            self::FILEAREA,
+            0
+        );
 
         $record = $DB->get_record(self::TABLE, ['assignment' => $instance->id]);
-        $newrecord = (object)[
-            'assignment' => $instance->id,
-            'template' => $editordata['text'],
-            'templateformat' => $editordata['format']
+        $newrecord = (object) [
+            'assignment'     => $instance->id,
+            'template'       => $editordata['text'],
+            'templateformat' => $editordata['format'],
         ];
 
         if ($record) {
@@ -107,18 +175,140 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         } else {
             $DB->insert_record(self::TABLE, $newrecord);
         }
+
         return true;
     }
 
-    public function allow_submissions() { return false; }
-    public function is_empty(stdClass $submission) { return true; }
-    
+    /**
+     * Inject the response template into the online text editor for students.
+     *
+     * This runs before the onlinetext plugin (via sort order) and sets
+     * $data->onlinetext so the editor is pre-filled on first attempt.
+     *
+     * @param stdClass|null $submission The existing submission, or null.
+     * @param MoodleQuickForm $mform The submission form.
+     * @param stdClass $data Shared form data object.
+     * @param int $userid The student user ID.
+     * @return bool Always false — this plugin adds no form elements.
+     */
+    public function get_form_elements_for_user($submission, MoodleQuickForm $mform, stdClass $data, $userid) {
+        global $DB;
+
+        // Content already populated by another plugin or earlier load.
+        if (!empty($data->onlinetext)) {
+            return false;
+        }
+
+        // Student already has a saved onlinetext draft/submission — don't override.
+        if ($submission) {
+            if ($DB->record_exists('assignsubmission_onlinetext', ['submission' => $submission->id])) {
+                return false;
+            }
+        }
+
+        $assignmentid = $this->assignment->get_instance()->id;
+        $template = $DB->get_record(self::TABLE, ['assignment' => $assignmentid]);
+
+        if (!$template || empty(trim($template->template))) {
+            return false;
+        }
+
+        // Set raw template text. The onlinetext plugin's file_prepare_standard_editor
+        // will handle @@PLUGINFILE@@ URL rewriting into the draft area.
+        $data->onlinetext = $template->template;
+        $data->onlinetextformat = $template->templateformat;
+
+        // Copy embedded files from the template into the onlinetext draft area.
+        $this->assignsubmission_responsetemplate_copy_template_files_to_draft($userid);
+
+        return false;
+    }
+
+    /**
+     * Copy template files into the onlinetext draft area so embedded
+     * images and attachments resolve in the student's editor.
+     *
+     * @param int $userid The student user ID.
+     * @return void
+     */
+    private function assignsubmission_responsetemplate_copy_template_files_to_draft(int $userid): void {
+        $context = $this->assignment->get_context();
+        $fs = get_file_storage();
+        $templatefiles = $fs->get_area_files(
+            $context->id,
+            self::COMPONENT,
+            self::FILEAREA,
+            0,
+            'filepath, filename',
+            false
+        );
+
+        if (empty($templatefiles)) {
+            return;
+        }
+
+        $draftid = file_get_submitted_draft_itemid('onlinetext');
+        if (!$draftid) {
+            $draftid = file_get_unused_draft_itemid();
+            $_REQUEST['onlinetext'] = $draftid;
+        }
+
+        $usercontext = \context_user::instance($userid);
+        foreach ($templatefiles as $file) {
+            if ($fs->file_exists(
+                $usercontext->id,
+                'user',
+                'draft',
+                $draftid,
+                $file->get_filepath(),
+                $file->get_filename()
+            )) {
+                continue;
+            }
+            $fs->create_file_from_storedfile([
+                'contextid' => $usercontext->id,
+                'component' => 'user',
+                'filearea'  => 'draft',
+                'itemid'    => $draftid,
+                'filepath'  => $file->get_filepath(),
+                'filename'  => $file->get_filename(),
+            ], $file);
+        }
+    }
+
+    /**
+     * This plugin participates in the submission form loop but does not
+     * accept submissions itself — student data is stored by onlinetext.
+     *
+     * @return bool
+     */
+    public function allow_submissions() {
+        return true;
+    }
+
+    /**
+     * The plugin never stores student submission content.
+     *
+     * @param stdClass $submission The submission object.
+     * @return bool Always true.
+     */
+    public function is_empty(stdClass $submission) {
+        return true;
+    }
+
+    /**
+     * Remove all template data when the assignment is deleted.
+     *
+     * @return bool
+     */
     public function delete_instance() {
         global $DB;
+
         $cm = $this->assignment->get_course_module();
         if ($cm && !empty($cm->instance)) {
             $DB->delete_records(self::TABLE, ['assignment' => $cm->instance]);
         }
+
         return true;
     }
 }

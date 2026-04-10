@@ -1,151 +1,82 @@
-Basically adds an element to online text where a teacher can add a "response template" to act a little like quiz essay. Saves to a new table defined 
-in this plugin. On submission it should load up in the student's submission in tinymce for them to fill in the answers.
-Why? grading is generally better in assignment, several use cases popped up for "exam" type scenarios where quiz grading and feedback did not fit the bill.
+# Response Template — Assignment Submission Plugin
 
-in mod/assign/submission/onlinetext/locallib.php
-core hack around L168 (MOODLE_404_STABLE)
-Could not get it to work outside this in a separate plugin, not that sure why but it seemed very hard to get the assignment and submission id passed through.
+An assignment submission plugin for Moodle that lets teachers define a response
+template which is pre-filled into the online text editor when students first
+open their submission.
 
- ```
- if ($submission) {
-            $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
-            if ($onlinetextsubmission) {
-                $data->onlinetext = $onlinetextsubmission->onlinetext;
-                $data->onlinetextformat = $onlinetextsubmission->onlineformat;
-            } else {
-                // --- START RESPONSE TEMPLATE CORE HACK ---
-                // If there is no existing student submission, check for a teacher template.
-                global $DB;
-                $resptemp = $DB->get_record('assign_submission_resptemp', [
-                    'assignment' => $this->assignment->get_instance()->id
-                ]);
+## Use case
 
-                if ($resptemp && !empty(trim($resptemp->template))) {
-                    // Inject the template into the data object.
-                    $data->onlinetext = file_rewrite_pluginfile_urls(
-                        $resptemp->template,
-                        'pluginfile.php',
-                        $this->assignment->get_context()->id,
-                        'assignsubmission_responsetemplate',
-                        'template',
-                        0
-                    );
-                    $data->onlinetextformat = $resptemp->templateformat;
-                    
-                    // Log to PHP error log.
-                    error_log("[CORE_HACK] Template injected for Assignment: " . $this->assignment->get_instance()->id);
-                }
-                // --- END RESPONSE TEMPLATE CORE HACK ---
-            }
-        }
-        
+Assignment grading and feedback workflows are often better suited than quiz for
+exam-style scenarios. This plugin brings the "essay question with template"
+pattern from quiz into assignments — teachers provide structured prompts
+(headings, numbered sections, tables) and students fill in their responses.
 
-        $data = file_prepare_standard_editor($data,
-                                             'onlinetext',
-                                             $editoroptions,
-                                             $this->assignment->get_context(),
-                                             'assignsubmission_onlinetext',
-                                             ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
-                                             $submissionid);
-        $mform->addElement('editor', 'onlinetext_editor', $this->get_name(), null, $editoroptions);
+## How it works
 
-        return true;
-    }```
+1. **Teacher** enables both *Online text* and *Response template* in the
+   assignment settings, then writes template content in the WYSIWYG editor.
+2. **Student** opens the assignment for the first time — the template appears
+   pre-filled in their TinyMCE editor.
+3. **Student** edits, adds their work, and saves/submits as normal.
+4. **On return** — if the student already has a saved draft or submission, the
+   template is **not** re-applied. Their work is preserved.
 
+### No core modifications required
 
-further core hack for full screen with sidebar - WIP
+Previous versions of this plugin required a patch to
+`mod/assign/submission/onlinetext/locallib.php`. This version works entirely
+through Moodle's plugin API.
+
+The plugin registers as a submission plugin with a sort order lower than
+onlinetext. When Moodle builds the submission form, it iterates through plugins
+in sort order. This plugin runs first and writes the template into the shared
+`$data->onlinetext` property. The onlinetext plugin then picks this up and loads
+it into the editor — no core hack needed.
+
+## Requirements
+
+- Moodle 4.0 or later.
+- The **Online text** submission type must be enabled on the same assignment.
+- The plugin sort order must be lower than the onlinetext plugin so it executes
+  first. This is set automatically on install (`sortorder = -1`).
+
+## Installation
+
+Copy or clone into `mod/assign/submission/responsetemplate/` and visit the
+Moodle admin notifications page to trigger the database upgrade.
+
 ```
- /**
-     * Add form elements for settings
-     *
-     * @param mixed $submission can be null
-     * @param MoodleQuickForm $mform
-     * @param stdClass $data
-     * @return true if elements were added to the form
-     */
-    public function get_form_elements($submission, MoodleQuickForm $mform, stdClass $data) {
-        // --- START RESPONSE TEMPLATE CORE HACK ---
-        global $DB, $PAGE; 
-        // --- END RESPONSE TEMPLATE CORE HACK ---
+git clone https://github.com/MURBASLMS/mod_assign_submission_responsetemplate.git \
+    /path/to/moodle/mod/assign/submission/responsetemplate
+```
 
-        $elements = array();
-        $editoroptions = $this->get_edit_options(); // This MUST be defined here.
-        $submissionid = $submission ? $submission->id : 0;
+## Known limitations
 
-        if (!isset($data->onlinetext)) {
-            $data->onlinetext = '';
-        }
-        if (!isset($data->onlinetextformat)) {
-            $data->onlinetextformat = editors_get_preferred_format();
-        }
+- **Depends on plugin execution order.** The plugin must run before onlinetext
+  in the submission plugin loop. If an administrator manually reorders plugins
+  via the database, the template injection may stop working.
+- **No per-question templates.** There is one template per assignment, not per
+  question or section. For multi-part structured responses, include all parts in
+  a single template.
+- **Template is text-only from the student's perspective.** Embedded images and
+  files in the template are copied to the student's draft area, but the student
+  cannot distinguish template files from their own uploads.
+- **First load only.** Once the student saves any draft (even a blank one), the
+  template will not re-appear. This is by design to prevent overwriting student
+  work.
 
-        if ($submission) {
-            $onlinetextsubmission = $this->get_onlinetext_submission($submission->id);
-            if ($onlinetextsubmission) {
-                $data->onlinetext = $onlinetextsubmission->onlinetext;
-                $data->onlinetextformat = $onlinetextsubmission->onlineformat;
-            } else {
-                // --- START RESPONSE TEMPLATE CORE HACK ---
-                global $DB, $PAGE;
-                $assigninstance = $this->assignment; // This is the 'assign' class instance.
-                $resptemp = $DB->get_record('assign_submission_resptemp', [
-                    'assignment' => $assigninstance->get_instance()->id
-                ]);
+## File structure
 
-                if ($resptemp && !empty(trim($resptemp->template))) {
-                    $data->onlinetext = file_rewrite_pluginfile_urls(
-                        $resptemp->template, 'pluginfile.php',
-                        $this->assignment->get_context()->id,
-                        'assignsubmission_responsetemplate', 'template', 0
-                    );
-                    $data->onlinetextformat = $resptemp->templateformat;
+```
+responsetemplate/
+  classes/privacy/provider.php  — GDPR: no student data stored
+  db/install.xml                — Schema for assign_submission_resptemp table
+  lang/en/                      — English language strings
+  lib.php                       — File serving (pluginfile callback)
+  locallib.php                  — Main plugin class
+  version.php                   — Version metadata
+```
 
-                    if (!empty($resptemp->fullscreen)) {
-                        $context = $this->assignment->get_context();
+## License
 
-                        // Use the official Assignment API methods to get the content.
-                        // This handles all permissions, filters, and lazy-loading.
-                        $desc = format_text(
-                            $assigninstance->get_instance()->intro, 
-                            $assigninstance->get_instance()->introformat, 
-                            ['context' => $context]
-                        );
-
-                        // Try to get activity instructions using the specific getter.
-                        $instructions = '';
-                        $instance = $assigninstance->get_instance();
-                        if (method_exists($assigninstance, 'get_activity_instructions')) {
-                            $instructions = $assigninstance->get_activity_instructions();
-                        } else if (isset($instance->activityinstructions)) {
-                            // Fallback for versions where getter isn't public.
-                            $instructions = format_text(
-                                $instance->activityinstructions, 
-                                $instance->activityinstructionsformat, 
-                                ['context' => $context]
-                            );
-                        }
-
-                        $sidebarinfo = [
-                            'description' => $desc,
-                            'instructions' => $instructions
-                        ];
-
-                        $PAGE->requires->js_call_amd('assignsubmission_responsetemplate/fullscreen', 'init', [$sidebarinfo]);
-                    }
-                }
-                // --- END RESPONSE TEMPLATE CORE HACK ---
-            }
-        }
-
-        // Arguments: 3rd arg is $editoroptions, which is now guaranteed to be an array.
-        $data = file_prepare_standard_editor($data,
-                                             'onlinetext',
-                                             $editoroptions,
-                                             $this->assignment->get_context(),
-                                             'assignsubmission_onlinetext',
-                                             ASSIGNSUBMISSION_ONLINETEXT_FILEAREA,
-                                             $submissionid);
-        $mform->addElement('editor', 'onlinetext_editor', $this->get_name(), null, $editoroptions);
-
-        return true;
-    }```
+GNU GPL v3 or later — https://www.gnu.org/copyleft/gpl.html
