@@ -25,6 +25,6 @@
 $string['enabled'] = 'Response template';
 $string['enabled_help'] = 'If enabled, the teacher can define a response template that will be pre-filled into the online text submission for students. Requires the Online text submission type to also be enabled.';
 $string['pluginname'] = 'Response template';
-$string['privacy:metadata'] = 'The Response template plugin only stores teacher-authored template content for assignments. It does not store any personal data about students.';
+$string['privacy:metadata'] = 'The Response template plugin stores assignment configuration only (a per-assignment template text). It does not store any personal data linked to a user.';
 $string['responsetemplate'] = 'Response template';
 $string['responsetemplate_help'] = 'Enter the text you want students to see when they first open their online text submission. If a student has already saved a draft, this template will not overwrite their work.';

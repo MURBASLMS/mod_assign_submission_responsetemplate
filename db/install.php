@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version information for the response template submission plugin.
+ * Post-install hook for the response template submission plugin.
  *
  * @package   assignsubmission_responsetemplate
  * @copyright 2026 MURBA S.L.
@@ -24,9 +24,16 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'assignsubmission_responsetemplate';
-$plugin->version   = 2026042900;
-$plugin->requires  = 2022041900;
-$plugin->supported = [400, 501];
-$plugin->maturity  = MATURITY_BETA;
-$plugin->release   = '1.2';
+/**
+ * Runs once after the plugin's database schema is installed.
+ *
+ * The plugin must execute before assignsubmission_onlinetext in the submission
+ * plugin loop so it can populate $data->onlinetext before the onlinetext plugin
+ * reads it. A negative sortorder guarantees this regardless of when the plugin
+ * is installed relative to other submission plugins.
+ *
+ * @return void
+ */
+function xmldb_assignsubmission_responsetemplate_install() {
+    set_config('sortorder', -1, 'assignsubmission_responsetemplate');
+}

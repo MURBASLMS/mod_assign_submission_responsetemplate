@@ -35,10 +35,25 @@ it into the editor — no core hack needed.
 
 ## Requirements
 
-- Moodle 4.0 or later.
+- Moodle 4.0 or later (tested against Moodle 4.05 LTS and Moodle 5.0).
+- PHP 8.1 or later.
 - The **Online text** submission type must be enabled on the same assignment.
 - The plugin sort order must be lower than the onlinetext plugin so it executes
-  first. This is set automatically on install (`sortorder = -1`).
+  first. This is set automatically on install (`sortorder = -1`, see
+  [db/install.php](db/install.php)).
+
+## Tested with
+
+[![CI](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml/badge.svg)](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml)
+
+| | PHP 8.1 | PHP 8.2 | PHP 8.3 |
+|---|---|---|---|
+| Moodle 4.05 (PostgreSQL) | ✅ | ✅ | ✅ |
+| Moodle 4.05 (MariaDB)    | ✅ | ✅ | ✅ |
+| Moodle 5.0 (PostgreSQL)  | ✅ | ✅ | ✅ |
+| Moodle 5.0 (MariaDB)     | ✅ | ✅ | ✅ |
+
+(Confirm against the latest [CI run](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml) before relying on the badge above.)
 
 ## Installation
 
@@ -69,13 +84,22 @@ git clone https://github.com/MURBASLMS/mod_assign_submission_responsetemplate.gi
 
 ```
 responsetemplate/
-  classes/privacy/provider.php  — GDPR: no student data stored
+  .github/workflows/ci.yml      — Moodle Plugin CI matrix
+  classes/privacy/provider.php  — GDPR: null_provider, no user data stored
   db/install.xml                — Schema for assign_submission_resptemp table
+  db/install.php                — Sets sortorder = -1 on first install
+  db/upgrade.php                — Schema migrations with savepoints
   lang/en/                      — English language strings
   lib.php                       — File serving (pluginfile callback)
   locallib.php                  — Main plugin class
+  tests/                        — PHPUnit tests
   version.php                   — Version metadata
 ```
+
+## Issue tracker
+
+Report bugs and request features at
+https://github.com/joethibault/mod_assign_submission_responsetemplate/issues.
 
 ## License
 

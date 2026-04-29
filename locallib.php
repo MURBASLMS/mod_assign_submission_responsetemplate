@@ -154,18 +154,23 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         }
 
         $contextid = $this->assignment->get_context()->id;
-        file_save_draft_area_files(
+        // Persist embedded files into the template area AND rewrite the editor's
+        // draftfile.php URLs to @@PLUGINFILE@@ tokens so the stored text remains
+        // portable across contexts.
+        $savedtext = file_save_draft_area_files(
             $editordata['itemid'],
             $contextid,
             self::COMPONENT,
             self::FILEAREA,
-            0
+            0,
+            null,
+            $editordata['text']
         );
 
         $record = $DB->get_record(self::TABLE, ['assignment' => $instance->id]);
         $newrecord = (object) [
             'assignment'     => $instance->id,
-            'template'       => $editordata['text'],
+            'template'       => $savedtext,
             'templateformat' => $editordata['format'],
         ];
 
@@ -184,6 +189,9 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
      *
      * This runs before the onlinetext plugin (via sort order) and sets
      * $data->onlinetext so the editor is pre-filled on first attempt.
+     * Embedded template images and attachments are served from the template
+     * file area via the plugin's pluginfile callback — no copying into the
+     * student's draft area is required.
      *
      * @param stdClass|null $submission The existing submission, or null.
      * @param MoodleQuickForm $mform The submission form.
@@ -213,67 +221,21 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
             return false;
         }
 
-        // Set raw template text. The onlinetext plugin's file_prepare_standard_editor
-        // will handle @@PLUGINFILE@@ URL rewriting into the draft area.
-        $data->onlinetext = $template->template;
-        $data->onlinetextformat = $template->templateformat;
-
-        // Copy embedded files from the template into the onlinetext draft area.
-        $this->assignsubmission_responsetemplate_copy_template_files_to_draft($userid);
-
-        return false;
-    }
-
-    /**
-     * Copy template files into the onlinetext draft area so embedded
-     * images and attachments resolve in the student's editor.
-     *
-     * @param int $userid The student user ID.
-     * @return void
-     */
-    private function assignsubmission_responsetemplate_copy_template_files_to_draft(int $userid): void {
-        $context = $this->assignment->get_context();
-        $fs = get_file_storage();
-        $templatefiles = $fs->get_area_files(
-            $context->id,
+        // Resolve @@PLUGINFILE@@ tokens to absolute pluginfile.php URLs against
+        // the template file area. Reading these is gated by require_login() in
+        // assignsubmission_responsetemplate_pluginfile().
+        $contextid = $this->assignment->get_context()->id;
+        $data->onlinetext = file_rewrite_pluginfile_urls(
+            $template->template,
+            'pluginfile.php',
+            $contextid,
             self::COMPONENT,
             self::FILEAREA,
-            0,
-            'filepath, filename',
-            false
+            0
         );
+        $data->onlinetextformat = $template->templateformat;
 
-        if (empty($templatefiles)) {
-            return;
-        }
-
-        $draftid = file_get_submitted_draft_itemid('onlinetext');
-        if (!$draftid) {
-            $draftid = file_get_unused_draft_itemid();
-            $_REQUEST['onlinetext'] = $draftid;
-        }
-
-        $usercontext = \context_user::instance($userid);
-        foreach ($templatefiles as $file) {
-            if ($fs->file_exists(
-                $usercontext->id,
-                'user',
-                'draft',
-                $draftid,
-                $file->get_filepath(),
-                $file->get_filename()
-            )) {
-                continue;
-            }
-            $fs->create_file_from_storedfile([
-                'contextid' => $usercontext->id,
-                'component' => 'user',
-                'filearea'  => 'draft',
-                'itemid'    => $draftid,
-                'filepath'  => $file->get_filepath(),
-                'filename'  => $file->get_filename(),
-            ], $file);
-        }
+        return false;
     }
 
     /**
