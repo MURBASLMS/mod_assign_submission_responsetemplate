@@ -22,8 +22,6 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Run incremental schema upgrades for assignsubmission_responsetemplate.
  *
@@ -64,6 +62,16 @@ function xmldb_assignsubmission_responsetemplate_upgrade($oldversion) {
         $dbman->add_key($table, $newkey);
 
         upgrade_plugin_savepoint(true, 2026042900, 'assignsubmission', 'responsetemplate');
+    }
+
+    if ($oldversion < 2026042901) {
+        // Rename the table to use the full frankenstyle component name so it
+        // satisfies moodle-plugin-ci's table-prefix validation.
+        $oldtable = new xmldb_table('assign_submission_resptemp');
+        if ($dbman->table_exists($oldtable)) {
+            $dbman->rename_table($oldtable, 'assignsubmission_responsetemplate');
+        }
+        upgrade_plugin_savepoint(true, 2026042901, 'assignsubmission', 'responsetemplate');
     }
 
     return true;

@@ -24,8 +24,6 @@
 
 namespace assignsubmission_responsetemplate\privacy;
 
-defined('MOODLE_INTERNAL') || die();
-
 /**
  * Privacy provider — this plugin stores no student personal data.
  *
@@ -34,7 +32,6 @@ defined('MOODLE_INTERNAL') || die();
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class provider implements \core_privacy\local\metadata\null_provider {
-
     /**
      * Return the reason this plugin collects no data.
      *

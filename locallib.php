@@ -35,9 +35,8 @@ require_once($CFG->dirroot . '/mod/assign/submissionplugin.php');
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class assign_submission_responsetemplate extends assign_submission_plugin {
-
     /** @var string Database table name. */
-    const TABLE = 'assign_submission_resptemp';
+    const TABLE = 'assignsubmission_responsetemplate';
 
     /** @var string Frankenstyle component name. */
     const COMPONENT = 'assignsubmission_responsetemplate';
