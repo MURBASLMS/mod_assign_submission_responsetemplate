@@ -73,7 +73,6 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
             ['rows' => 10],
             $editoroptions
         );
-        $mform->setType('assignsubmission_responsetemplate_template', PARAM_RAW);
 
         $mform->hideIf(
             'assignsubmission_responsetemplate_template',
@@ -186,11 +185,12 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
     /**
      * Inject the response template into the online text editor for students.
      *
-     * This runs before the onlinetext plugin (via sort order) and sets
-     * $data->onlinetext so the editor is pre-filled on first attempt.
-     * Embedded template images and attachments are served from the template
-     * file area via the plugin's pluginfile callback — no copying into the
-     * student's draft area is required.
+     * This runs after the onlinetext plugin (via sort order) and sets
+     * $data->onlinetext only when onlinetext has left it empty, so the editor is
+     * pre-filled on first attempt and students can restore the template by
+     * clearing the editor. Embedded template images and attachments are served
+     * from the template file area via the plugin's pluginfile callback — no
+     * copying into the student's draft area is required.
      *
      * @param stdClass|null $submission The existing submission, or null.
      * @param MoodleQuickForm $mform The submission form.
@@ -201,38 +201,30 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
     public function get_form_elements_for_user($submission, MoodleQuickForm $mform, stdClass $data, $userid) {
         global $DB;
 
-        // Content already populated by another plugin or earlier load.
-        if (!empty($data->onlinetext)) {
+        // We must not apply the template if content was already entered.
+        if (!empty(trim($data->onlinetext ?? ''))) {
             return false;
-        }
-
-        // Student already has a saved onlinetext draft/submission — don't override.
-        if ($submission) {
-            if ($DB->record_exists('assignsubmission_onlinetext', ['submission' => $submission->id])) {
-                return false;
-            }
         }
 
         $assignmentid = $this->assignment->get_instance()->id;
         $template = $DB->get_record(self::TABLE, ['assignment' => $assignmentid]);
-
         if (!$template || empty(trim($template->template))) {
             return false;
         }
 
-        // Resolve @@PLUGINFILE@@ tokens to absolute pluginfile.php URLs against
-        // the template file area. Reading these is gated by require_login() in
-        // assignsubmission_responsetemplate_pluginfile().
-        $contextid = $this->assignment->get_context()->id;
+        // Rewrite our plugin files as final files, then prepare the editor without moving those files
+        // into the draft area of the student. We could not do this if the student had already entered content.
+        $context = $this->assignment->get_context();
         $data->onlinetext = file_rewrite_pluginfile_urls(
             $template->template,
             'pluginfile.php',
-            $contextid,
+            $context->id,
             self::COMPONENT,
             self::FILEAREA,
             0
         );
         $data->onlinetextformat = $template->templateformat;
+        $data = file_prepare_standard_editor($data, 'onlinetext', ['context' => $context], $context);
 
         return false;
     }

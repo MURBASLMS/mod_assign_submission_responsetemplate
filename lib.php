@@ -22,6 +22,10 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+defined('MOODLE_INTERNAL') || die();
+
+require_once(__DIR__ . '/locallib.php');
+
 /**
  * Serve files for the response template plugin.
  *
@@ -48,8 +52,22 @@ function assignsubmission_responsetemplate_pluginfile(
     }
 
     require_login($course, false, $cm);
+    if ($cm->modname !== 'assign') {
+        return false;
+    }
 
-    if ($filearea !== 'template') {
+    // Those permissions should cover all roles that are editing, viewing, or using the template.
+    $capabilities = [
+        'mod/assign:submit',
+        'mod/assign:grade',
+        'mod/assign:viewgrades',
+        'mod/assign:addinstance',
+    ];
+    if (!has_any_capability($capabilities, $context)) {
+        return false;
+    }
+
+    if ($filearea !== assign_submission_responsetemplate::FILEAREA) {
         return false;
     }
 
@@ -58,11 +76,23 @@ function assignsubmission_responsetemplate_pluginfile(
         return false;
     }
 
-    $relativepath = implode('/', $args);
-    $fullpath = "/{$context->id}/assignsubmission_responsetemplate/template/0/{$relativepath}";
+    if (empty($args)) {
+        return false;
+    }
+
+    $filename = array_pop($args);
+    $filepath = $args ? '/' . implode('/', $args) . '/' : '/';
+    $forcedownload = true;
 
     $fs = get_file_storage();
-    $file = $fs->get_file_by_hash(sha1($fullpath));
+    $file = $fs->get_file(
+        $context->id,
+        assign_submission_responsetemplate::COMPONENT,
+        assign_submission_responsetemplate::FILEAREA,
+        $itemid,
+        $filepath,
+        $filename
+    );
     if (!$file || $file->is_directory()) {
         return false;
     }

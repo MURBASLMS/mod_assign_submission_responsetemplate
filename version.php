@@ -25,7 +25,7 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'assignsubmission_responsetemplate';
-$plugin->version   = 2026042901;
+$plugin->version   = 2026050200;
 $plugin->requires  = 2022041900;
 $plugin->supported = [400, 501];
 $plugin->maturity  = MATURITY_BETA;
