@@ -53,7 +53,7 @@ it into the editor — no core hack needed.
 | Moodle 5.0 (PostgreSQL)  | ✅ | ✅ | ✅ |
 | Moodle 5.0 (MariaDB)     | ✅ | ✅ | ✅ |
 
-(Confirm against the latest [CI run](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml) before relying on the badge above.)
+(Confirm against the latest [CI run](https://github.com/MURBASLMS/mod_assign_submission_responsetemplate/actions/workflows/ci.yml) before relying on the badge above.)
 
 ## Installation
 
@@ -99,7 +99,7 @@ responsetemplate/
 ## Issue tracker
 
 Report bugs and request features at
-https://github.com/joethibault/mod_assign_submission_responsetemplate/issues.
+https://github.com/MURBASLMS/mod_assign_submission_responsetemplate/issues.
 
 ## License
 
