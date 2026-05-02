@@ -39,12 +39,12 @@ it into the editor — no core hack needed.
 - PHP 8.1 or later.
 - The **Online text** submission type must be enabled on the same assignment.
 - The plugin sort order must be lower than the onlinetext plugin so it executes
-  first. This is set automatically on install (`sortorder = -1`, see
+  first. This is set automatically on install, see
   [db/install.php](db/install.php)).
 
 ## Tested with
 
-[![CI](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml/badge.svg)](https://github.com/joethibault/mod_assign_submission_responsetemplate/actions/workflows/ci.yml)
+[![CI](https://github.com/MURBASLMS/mod_assign_submission_responsetemplate/actions/workflows/ci.yml/badge.svg)](https://github.com/MURBASLMS/mod_assign_submission_responsetemplate/actions/workflows/ci.yml)
 
 | | PHP 8.1 | PHP 8.2 | PHP 8.3 |
 |---|---|---|---|
