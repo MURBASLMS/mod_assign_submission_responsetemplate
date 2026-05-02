@@ -35,7 +35,7 @@ it into the editor — no core hack needed.
 
 ## Requirements
 
-- Moodle 4.0 or later (tested against Moodle 4.05 LTS and Moodle 5.0).
+- Moodle 4.0 or later (tested against Moodle 4.5 LTS and Moodle 5.0).
 - PHP 8.1 or later.
 - The **Online text** submission type must be enabled on the same assignment.
 - The plugin sort order must be lower than the onlinetext plugin so it executes
