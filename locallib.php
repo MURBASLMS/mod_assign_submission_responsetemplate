@@ -192,13 +192,6 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
     /**
      * Inject the response template into the online text editor for students.
      *
-     * This runs after the onlinetext plugin (via sort order) and sets
-     * $data->onlinetext only when onlinetext has left it empty, so the editor is
-     * pre-filled on first attempt and students can restore the template by
-     * clearing the editor. Embedded template images and attachments are served
-     * from the template file area via the plugin's pluginfile callback — no
-     * copying into the student's draft area is required.
-     *
      * @param stdClass|null $submission The existing submission, or null.
      * @param MoodleQuickForm $mform The submission form.
      * @param stdClass $data Shared form data object.
@@ -219,19 +212,18 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
             return false;
         }
 
-        // Rewrite our plugin files as final files, then prepare the editor without moving those files
-        // into the draft area of the student. We could not do this if the student had already entered content.
-        $context = $this->assignment->get_context();
-        $data->onlinetext = file_rewrite_pluginfile_urls(
-            $template->template,
-            'pluginfile.php',
-            $context->id,
-            self::COMPONENT,
-            self::FILEAREA,
+        // Prepare the editor and copy files to the student's draft area.
+        $data->onlinetext = $template->template;
+        $data->onlinetextformat = $template->templateformat;
+        $data = file_prepare_standard_editor(
+            $data,
+            'onlinetext',
+            $this->get_editor_options(),
+            $this->assignment->get_context(),
+            static::COMPONENT,
+            static::FILEAREA,
             0
         );
-        $data->onlinetextformat = $template->templateformat;
-        $data = file_prepare_standard_editor($data, 'onlinetext', ['context' => $context], $context);
 
         return false;
     }
