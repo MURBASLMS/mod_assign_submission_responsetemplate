@@ -74,5 +74,11 @@ function xmldb_assignsubmission_responsetemplate_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026042901, 'assignsubmission', 'responsetemplate');
     }
 
+    if ($oldversion < 2026050200) {
+        set_config('sortorder', 100, 'assignsubmission_responsetemplate');
+
+        upgrade_plugin_savepoint(true, 2026050200, 'assignsubmission', 'responsetemplate');
+    }
+
     return true;
 }
