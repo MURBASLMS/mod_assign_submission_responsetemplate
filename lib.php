@@ -56,9 +56,8 @@ function assignsubmission_responsetemplate_pluginfile(
         return false;
     }
 
-    // Those permissions should cover all roles that are editing, viewing, or using the template.
+    // Those permissions should cover roles that expected to view/edit the template, but are not students.
     $capabilities = [
-        'mod/assign:submit',
         'mod/assign:grade',
         'mod/assign:viewgrades',
         'mod/assign:addinstance',
