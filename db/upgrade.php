@@ -80,5 +80,15 @@ function xmldb_assignsubmission_responsetemplate_upgrade($oldversion) {
         upgrade_plugin_savepoint(true, 2026050200, 'assignsubmission', 'responsetemplate');
     }
 
+
+    if ($oldversion < 2026050201) {
+        // Reset the sortorder to set the highest expected index, instead of creating gap which would
+        // render the result of the method {@see assign_plugin::is_last()} incorrect.
+        $submissionplugins = core_component::get_plugin_list('assignsubmission');
+        set_config('sortorder', count($submissionplugins) - 1, 'assignsubmission_responsetemplate');
+
+        upgrade_plugin_savepoint(true, 2026050201, 'assignsubmission', 'responsetemplate');
+    }
+
     return true;
 }
