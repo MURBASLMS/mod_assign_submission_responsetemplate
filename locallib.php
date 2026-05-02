@@ -54,24 +54,31 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
     }
 
     /**
+     * Get editor options.
+     *
+     * @return array
+     */
+    protected function get_editor_options() {
+        return [
+            'subdirs'  => 1,
+            'maxfiles' => EDITOR_UNLIMITED_FILES,
+            'context'  => $this->assignment->get_context(),
+        ];
+    }
+
+    /**
      * Add the template editor to the assignment settings form.
      *
      * @param MoodleQuickForm $mform The form to add elements to.
      * @return void
      */
     public function get_settings(MoodleQuickForm $mform) {
-        $editoroptions = [
-            'subdirs'  => 1,
-            'maxfiles' => EDITOR_UNLIMITED_FILES,
-            'context'  => $this->assignment->get_context(),
-        ];
-
         $mform->addElement(
             'editor',
             'assignsubmission_responsetemplate_template',
             get_string('responsetemplate', self::COMPONENT),
             ['rows' => 10],
-            $editoroptions
+            $this->get_editor_options()
         );
 
         $mform->hideIf(
@@ -113,7 +120,7 @@ class assign_submission_responsetemplate extends assign_submission_plugin {
         file_prepare_standard_editor(
             $draftdata,
             'template',
-            ['context' => $context],
+            $this->get_editor_options(),
             $context,
             self::COMPONENT,
             self::FILEAREA,
