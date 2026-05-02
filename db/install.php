@@ -25,10 +25,11 @@
 /**
  * Runs once after the plugin's database schema is installed.
  *
- * The plugin must execute after assignsubmission_onlinetext.
- *
  * @return void
  */
 function xmldb_assignsubmission_responsetemplate_install() {
-    set_config('sortorder', 100, 'assignsubmission_responsetemplate');
+    // Sets the sortorder as the highest expected index, this guarantees that it applies after onlinetext.
+    // This method of setting the sortorder complies with {@see assign_plugin::is_last()} logic.
+    $submissionplugins = core_component::get_plugin_list('assignsubmission');
+    set_config('sortorder', count($submissionplugins) - 1, 'assignsubmission_responsetemplate');
 }
